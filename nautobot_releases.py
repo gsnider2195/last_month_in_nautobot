@@ -25,7 +25,7 @@ def get_releases(github_org, num_days=14):
                 if release.published_at < date_cutoff or release.draft:
                     break
                 release_dict = {key: getattr(release, key) for key in RELEASE_KEYS}
-                release_dict["name"] = f"{repo.name} {release.tag_name}"
+                release_dict["repo_name"] = repo.name
                 releases.append(release_dict)
         except UnknownObjectException:
             continue
@@ -39,6 +39,9 @@ def render_releases(releases):
         loader=jinja2.FileSystemLoader(searchpath="./templates"),
     )
     jinja2_environment.filters["date"] = lambda value, fmt: value.strftime(fmt)
+    jinja2_environment.filters["release_title"] = lambda value: " ".join(
+        value.split("-")
+    ).title()
     template = jinja2_environment.get_template("last_month_in_nautobot.j2")
     print(template.render(releases=releases))
 

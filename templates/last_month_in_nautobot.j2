@@ -1,5 +1,5 @@
 {% for release in releases %}
-- [{{ release.name }} - {{ release.published_at|date("%Y-%m-%d") }}]({{ release.html_url }})
+- {{ release.repo_name|release_title }}: [{{ release.tag_name }} - {{ release.published_at|date("%Y-%m-%d") }}]({{ release.html_url }})
 
   ADD RELEASE NOTES HERE
 
