@@ -1,31 +1,67 @@
+import datetime
+import jinja2
+import json
 import os
-import pprint
 
-from github import Auth, Github
+from github import Auth, Github, UnknownObjectException
 
-auth = Auth.Token(os.getenv("GITHUB_TOKEN"))
+RELEASE_KEYS = [
+    "published_at",
+    "tag_name",
+    "html_url",
+    "body",
+    "title",
+]
 
-g = Github(auth=auth)
 
-releases = []
+def get_releases(github_org, num_days=14):
+    releases = []
+    date_cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=num_days)
+    for repo in github_org.get_repos():
+        if repo.private:
+            continue
+        try:
+            for release in repo.get_releases():
+                if release.published_at < date_cutoff or release.draft:
+                    break
+                release_dict = {key: getattr(release, key) for key in RELEASE_KEYS}
+                release_dict["name"] = f"{repo.name} {release.tag_name}"
+                releases.append(release_dict)
+        except UnknownObjectException:
+            continue
 
-org = g.get_organization("nautobot")
+    sorted_releases = sorted(releases, key=lambda k: k["published_at"], reverse=True)
+    return sorted_releases
 
-for repo in org.get_repos():
-    if repo.private:
-        continue
-    try:
-        release = repo.get_latest_release()
-    except:
-        continue
-    releases.append(
-        {
-            "name": f"{repo.name} {release.tag_name}",
-            "published_at": release.published_at,
-            "tag_name": release.tag_name,
-            "url": release.html_url,
-        }
+
+def render_releases(releases):
+    jinja2_environment = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(searchpath="./templates"),
     )
+    jinja2_environment.filters["date"] = lambda value, fmt: value.strftime(fmt)
+    template = jinja2_environment.get_template("last_month_in_nautobot.j2")
+    print(template.render(releases=releases))
 
-sorted_releases = sorted(releases, key=lambda k: k["published_at"], reverse=True)
-pprint.pprint(sorted_releases)
+
+def main():
+    if os.path.exists("releases.json"):
+        releases = json.load(open("releases.json"))
+        for release in releases:
+            release["published_at"] = datetime.datetime.strptime(
+                release["published_at"], "%Y-%m-%d %H:%M:%S"
+            )
+    else:
+        auth = Auth.Token(os.getenv("GITHUB_TOKEN"))
+        g = Github(auth=auth)
+
+        org = g.get_organization("nautobot")
+
+        releases = get_releases(org)
+        with open("releases.json", "w") as f:
+            json.dump(releases, f, indent=4, default=str)
+
+    render_releases(releases)
+
+
+if __name__ == "__main__":
+    main()
