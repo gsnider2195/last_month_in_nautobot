@@ -1,6 +1,6 @@
 {% for release in releases %}
 - {{ release.repo_name|release_title }}: [{{ release.tag_name }} - {{ release.published_at|date("%Y-%m-%d") }}]({{ release.html_url }})
 
-  ADD RELEASE NOTES HERE
+  {{ release.body }}
 
 {% endfor %}
