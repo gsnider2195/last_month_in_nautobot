@@ -14,9 +14,9 @@ RELEASE_KEYS = [
 ]
 
 
-def get_releases(github_org, num_days=14):
+def get_releases(github_org, num_days=30):
     releases = []
-    date_cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=num_days)
+    date_cutoff = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=num_days)
     for repo in github_org.get_repos():
         if repo.private:
             continue
@@ -30,7 +30,12 @@ def get_releases(github_org, num_days=14):
         except UnknownObjectException:
             continue
 
-    sorted_releases = sorted(releases, key=lambda k: k["published_at"], reverse=True)
+    def sort_releases(key):
+        if key["repo_name"] == "nautobot":
+            return key["published_at"] + datetime.timedelta(weeks=100)
+        return key["published_at"]
+
+    sorted_releases = sorted(releases, key=sort_releases, reverse=True)
     return sorted_releases
 
 
