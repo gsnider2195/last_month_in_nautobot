@@ -1,5 +1,40 @@
-{% for release in releases %}
-- {{ release.repo_name|release_title }}: [{{ release.tag_name }} - {{ release.published_at|date("%Y-%m-%d") }}]({{ release.html_url }})
-  {{ release.body | indent }}
+---
+layout: post
+title: Last Month in Nautobot - {{ month_year }}
+tags: nautobot nautobot-plugin nautobot-monthly open-source
+author: Cristian Sirbu and Gary Snider
+---
 
+Welcome to our monthly Nautobot community update! We'll dive into the latest updates across the Nautobot community, highlighting the key milestones, releases, and noteworthy contributions. From new features and enhancements to bug fixes and events, there's always something happening in our dynamic ecosystem. Open source is at the core of our values, empowering individuals and organizations to collaborate, innovate, and make a positive impact together. This monthly blog post is our way of celebrating the accomplishments and contributions of our Nautobot community members.
+
+## Nautobot Core
+
+### Releases - Stable
+
+{% for release in releases | selectattr("repo_name", "eq", "nautobot") | selectattr("tag_name", "startswith", "v2.") -%}
+- {{ release.repo_name|release_title }}: [{{ release.tag_name }} - {{ release.published_at|date("%Y-%m-%d") }}]({{ release.html_url }})
+    {{ release.body.strip() | indent }}
 {% endfor %}
+
+### Releases - LTM 1.6
+
+{% for release in releases | selectattr("repo_name", "eq", "nautobot") | rejectattr("tag_name", "startswith", "v2.") -%}
+- {{ release.repo_name|release_title }}: [{{ release.tag_name }} - {{ release.published_at|date("%Y-%m-%d") }}]({{ release.html_url }})
+    {{ release.body.strip() | indent }}
+{% endfor %}
+
+## Apps Ecosystem
+
+{% for release in releases | rejectattr("repo_name", "eq", "nautobot") -%}
+- {{ release.repo_name|release_title }}: [{{ release.tag_name }} - {{ release.published_at|date("%Y-%m-%d") }}]({{ release.html_url }})
+    {{ release.body.strip() | indent }}
+{% endfor %}
+
+## Community
+
+## Get in Touch!
+
+Do you have any cool Nautobot-related project we should write about? Swing by the [Network to Code Slack](https://networktocode.slack.com/) -> channel `#nautobot` and write us a quick line! Sign up [here](http://slack.networktocode.com/) if you don't have an account.
+
+-Cristian and Gary
+

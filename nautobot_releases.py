@@ -2,8 +2,10 @@ import datetime
 import jinja2
 import json
 import os
+import re
 
 from github import Auth, Github, UnknownObjectException
+
 
 RELEASE_KEYS = [
     "published_at",
@@ -12,6 +14,15 @@ RELEASE_KEYS = [
     "body",
     "title",
 ]
+
+STRING_REPLACEMENTS = (
+    (r"(?i)\bssot\b", "SSoT"),
+    (r"(?i)nautobot-app-SSoT", "nautobot-app-ssot"),
+    (r"(?i)\bbgp\b", "BGP"),
+    (r"(?i)nautobot-app-BGP-models", "nautobot-app-bgp-models"),
+    (r"\r", ""),
+    (r"\n\n*", r"\n"),
+)
 
 
 def get_releases(github_org, num_days=30):
@@ -30,13 +41,26 @@ def get_releases(github_org, num_days=30):
         except UnknownObjectException:
             continue
 
-    def sort_releases(key):
-        if key["repo_name"] == "nautobot":
-            return key["published_at"] + datetime.timedelta(weeks=100)
-        return key["published_at"]
-
-    sorted_releases = sorted(releases, key=sort_releases, reverse=True)
+    sorted_releases = sorted(releases, key=lambda k: k["published_at"], reverse=True)
     return sorted_releases
+
+
+def substitute_strings(releases):
+    for release in releases:
+        for pattern, replacement in STRING_REPLACEMENTS:
+            release["repo_name"] = re.sub(pattern, replacement, release["repo_name"])
+            release["body"] = re.sub(pattern, replacement, release["body"])
+
+
+def filter_release_title(value):
+    release_title = " ".join(value.split("-")).title()
+    for pattern, replacement in STRING_REPLACEMENTS:
+        release_title = re.sub(pattern, replacement, release_title)
+    return release_title
+
+
+def test_startswith(value, match):
+    return value.startswith(match)
 
 
 def render_releases(releases):
@@ -44,11 +68,10 @@ def render_releases(releases):
         loader=jinja2.FileSystemLoader(searchpath="./templates"),
     )
     jinja2_environment.filters["date"] = lambda value, fmt: value.strftime(fmt)
-    jinja2_environment.filters["release_title"] = lambda value: " ".join(
-        value.split("-")
-    ).title()
+    jinja2_environment.filters["release_title"] = filter_release_title
+    jinja2_environment.tests["startswith"] = test_startswith
     template = jinja2_environment.get_template("last_month_in_nautobot.j2")
-    print(template.render(releases=releases))
+    print(template.render(releases=releases, month_year=datetime.date.today().strftime("%B %Y")))
 
 
 def main():
@@ -68,6 +91,7 @@ def main():
         with open("releases.json", "w") as f:
             json.dump(releases, f, indent=4, default=str)
 
+    substitute_strings(releases)
     render_releases(releases)
 
 
