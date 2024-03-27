@@ -22,6 +22,8 @@ STRING_REPLACEMENTS = (
     (r"(?i)nautobot-app-BGP-models", "nautobot-app-bgp-models"),
     (r"\r", ""),
     (r"\n\n*", r"\n"),
+    (r"(?m)^\* ", "- "),
+    (r"(?m)^##* ", "- "),
 )
 
 
