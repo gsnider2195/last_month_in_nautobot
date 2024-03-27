@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import jinja2
 import json
@@ -27,16 +28,27 @@ STRING_REPLACEMENTS = (
 )
 
 
-def get_releases(github_org, num_days=30):
+def get_releases(github_org):
     releases = []
-    date_cutoff = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=num_days)
+    month = 0
+    while month not in range(1, 13):
+        try:
+            month = int(input("Select month (1=January, 2=February, etc.): "))
+        except ValueError:
+            month = 0
+    year = datetime.date.today().year
+    if month == 12:
+        year -= 1
+    date_cutoff = datetime.datetime(year, month, 1)
     for repo in github_org.get_repos():
         if repo.private:
             continue
         try:
             for release in repo.get_releases():
-                if release.published_at < date_cutoff or release.draft:
+                if release.published_at < date_cutoff:
                     break
+                if release.draft:
+                    continue
                 release_dict = {key: getattr(release, key) for key in RELEASE_KEYS}
                 release_dict["repo_name"] = repo.name
                 releases.append(release_dict)
@@ -66,6 +78,10 @@ def test_startswith(value, match):
 
 
 def render_releases(releases):
+    if not releases:
+        print("No releases for this date")
+        return
+
     jinja2_environment = jinja2.Environment(
         loader=jinja2.FileSystemLoader(searchpath="./templates"),
     )
@@ -73,7 +89,7 @@ def render_releases(releases):
     jinja2_environment.filters["release_title"] = filter_release_title
     jinja2_environment.tests["startswith"] = test_startswith
     template = jinja2_environment.get_template("last_month_in_nautobot.j2")
-    print(template.render(releases=releases, month_year=datetime.date.today().strftime("%B %Y")))
+    print(template.render(releases=releases, month_year=releases[0]["published_at"].strftime("%B %Y")))
 
 
 def main():
