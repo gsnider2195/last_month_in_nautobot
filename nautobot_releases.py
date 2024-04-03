@@ -20,6 +20,8 @@ STRING_REPLACEMENTS = (
     (r"(?i)\bssot\b", "SSoT"),
     (r"(?i)nautobot-app-SSoT", "nautobot-app-ssot"),
     (r"(?i)\bbgp\b", "BGP"),
+    (r"(?i)chatops", "ChatOps"),
+    (r"(?i)nautobot-app-ChatOps", "nautobot-app-chatops"),
     (r"(?i)nautobot-app-BGP-models", "nautobot-app-bgp-models"),
     (r"\r", ""),
     (r"\n\n*", r"\n"),
@@ -48,6 +50,8 @@ def get_releases(github_org):
                 if release.published_at < date_cutoff:
                     break
                 if release.draft:
+                    continue
+                if release.published_at.month != month:
                     continue
                 release_dict = {key: getattr(release, key) for key in RELEASE_KEYS}
                 release_dict["repo_name"] = repo.name
