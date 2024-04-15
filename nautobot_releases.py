@@ -1,4 +1,3 @@
-import calendar
 import datetime
 import jinja2
 import json
@@ -93,7 +92,12 @@ def render_releases(releases):
     jinja2_environment.filters["release_title"] = filter_release_title
     jinja2_environment.tests["startswith"] = test_startswith
     template = jinja2_environment.get_template("last_month_in_nautobot.j2")
-    print(template.render(releases=releases, month_year=releases[0]["published_at"].strftime("%B %Y")))
+    print(
+        template.render(
+            releases=releases,
+            month_year=releases[0]["published_at"].strftime("%B %Y"),
+        )
+    )
 
 
 def main():
