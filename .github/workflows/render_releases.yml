@@ -38,10 +38,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set filename variable
+        id: set_filename
+        run: |
+          echo "filename=`date +'%Y-%m-%d'`-last-month-in-nautobot-YYMM.md" >> $GITHUB_OUTPUT
+
       - name: Render releases
         run: |
           MONTH_INT=$(date -d "${{ github.event.inputs.month }} 1" +'%m')
-          python nautobot_releases.py --month $MONTH_INT > `date +'%Y-%m-%d'`-last-month-in-nautobot-YYMM.md
+          python nautobot_releases.py --month $MONTH_INT > ${{ steps.set_filename.outputs.filename }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -49,4 +54,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: last-month-in-nautobot
-          path: "`date +'%Y-%m-%d'`-last-month-in-nautobot-YYMM.md"
+          path: '${{ steps.set_filename.outputs.filename }}'
