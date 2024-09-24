@@ -6,6 +6,7 @@ on:
       month:
         description: 'Month to render releases for'
         required: true
+        type: 'choice'
         options:
           - 'January'
           - 'February'
