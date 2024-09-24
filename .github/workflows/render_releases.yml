@@ -1,0 +1,49 @@
+name: Render Nautobot releases for Last Month in Nautobot blog post
+
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: 'Month to render releases for'
+        required: true
+        options:
+          - 'January'
+          - 'February'
+          - 'March'
+          - 'April'
+          - 'May'
+          - 'June'
+          - 'July'
+          - 'August'
+          - 'September'
+          - 'October'
+          - 'November'
+          - 'December'
+
+jobs:
+  render_releases:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Render releases
+        run: |
+          MONTH_INT=$(date -d "${{ github.event.inputs.month }} 1" +'%m')
+          python render_releases.py --month ${{ github.event.inputs.month }} > `date +'%Y-%m-%d'`-last-month-in-nautobot-YYMM.md
+
+      - name: Upload rendered releases
+        uses: actions/upload-artifact@v4
+        with:
+          name: last-month-in-nautobot
+          path: `date +'%Y-%m-%d'`-last-month-in-nautobot-YYMM.md

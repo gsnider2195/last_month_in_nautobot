@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import jinja2
 import json
@@ -29,16 +30,18 @@ STRING_REPLACEMENTS = (
 )
 
 
-def get_releases(github_org):
+def get_releases(github_org, month):
+    """Get all releases in public repos for the github organization for the specified month.
+
+    Args:
+        github_org (github.Organization): The github organization to get releases from.
+        month (int): The month to get releases for.
+    Returns:
+        list: A list of releases sorted by publish date.
+    """
     releases = []
-    month = 0
-    while month not in range(1, 13):
-        try:
-            month = int(input("Select month (1=January, 2=February, etc.): "))
-        except ValueError:
-            month = 0
     year = datetime.date.today().year
-    if month == 12:
+    if month == 12 and datetime.date.today().month == 1:
         year -= 1
     date_cutoff = datetime.datetime(year, month, 1)
     for repo in github_org.get_repos():
@@ -100,20 +103,43 @@ def render_releases(releases):
     )
 
 
+def arg_parser():
+    parser = argparse.ArgumentParser(description="Generate a report of releases for a given month.")
+    parser.add_argument(
+        "-m",
+        "--month",
+        type=int,
+        required=True,
+        help="The month to generate the report for.",
+        choices=range(1, 13),
+    )
+    parser.add_argument(
+        "-o",
+        "--github-org",
+        type=str,
+        help="The github organization to get releases from. Defaults to nautobot.",
+        default="nautobot",
+    )
+    return parser.parse_args()
+
+
 def main():
+    # parse arguments
+    args = arg_parser()
+
+    # releases.json is a cache for local development
+    # TODO: switch to requests-cache
     if os.path.exists("releases.json"):
         releases = json.load(open("releases.json"))
         for release in releases:
-            release["published_at"] = datetime.datetime.strptime(
-                release["published_at"], "%Y-%m-%d %H:%M:%S"
-            )
+            release["published_at"] = datetime.datetime.strptime(release["published_at"], "%Y-%m-%d %H:%M:%S")
     else:
         auth = Auth.Token(os.getenv("GITHUB_TOKEN"))
-        g = Github(auth=auth)
+        github_api = Github(auth=auth)
 
-        org = g.get_organization("nautobot")
+        github_org = github_api.get_organization(args.github_org)
 
-        releases = get_releases(org)
+        releases = get_releases(github_org, args.month)
         with open("releases.json", "w") as f:
             json.dump(releases, f, indent=4, default=str)
 
