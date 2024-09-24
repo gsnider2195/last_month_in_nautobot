@@ -41,7 +41,7 @@ jobs:
       - name: Render releases
         run: |
           MONTH_INT=$(date -d "${{ github.event.inputs.month }} 1" +'%m')
-          python nautobot_releases.py --month ${{ github.event.inputs.month }} > `date +'%Y-%m-%d'`-last-month-in-nautobot-YYMM.md
+          python nautobot_releases.py --month $MONTH_INT > `date +'%Y-%m-%d'`-last-month-in-nautobot-YYMM.md
 
       - name: Upload rendered releases
         uses: actions/upload-artifact@v4
