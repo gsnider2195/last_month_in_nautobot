@@ -43,9 +43,9 @@ SOURCE_DATA_STRING_REPLACEMENTS = (
 
 
 OUTPUT_HTML_STRING_REPLACEMENTS = (
+    (r'<a href="#.*?">(.*?)</a>', r"\1"),
+    (r'<a href=".*?\.md">(.*?)</a>', r"\1"),
     (r'<a href="(.*?)">(.*?)</a>', r"\2 (\1)"),
-    (r" \(#.*?\)", ""),
-    (r" \(.*?\.md\)", ""),
     # Required for formatting to be properly copy/pasted to Google Docs
     (
         r"<code>(.*?)</code>",
