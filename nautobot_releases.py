@@ -6,6 +6,7 @@ import os
 import re
 
 from github import Auth, Github, UnknownObjectException
+import markdown
 
 
 RELEASE_KEYS = [
@@ -16,17 +17,35 @@ RELEASE_KEYS = [
     "title",
 ]
 
-STRING_REPLACEMENTS = (
+SOURCE_DATA_STRING_REPLACEMENTS = (
+    # Capitalization fixes
     (r"(?i)\bssot\b", "SSoT"),
     (r"(?i)nautobot-app-SSoT", "nautobot-app-ssot"),
     (r"(?i)\bbgp\b", "BGP"),
     (r"(?i)chatops", "ChatOps"),
     (r"(?i)nautobot-app-ChatOps", "nautobot-app-chatops"),
     (r"(?i)nautobot-app-BGP-models", "nautobot-app-bgp-models"),
-    (r"\r", ""),
-    (r"\n\n*", r"\n"),
+    # Convert headings and lists to markdown lists
     (r"(?m)^\* ", "- "),
     (r"(?m)^##* ", "- "),
+    # Remove full changelog links
+    (r"(?m)^\s*..Full Changelog..: https://github.com/.*$", ""),
+    # Remove GitHub automatic release notes generation lines
+    (r"(?m)^.*made their first contribution in.*$", ""),
+    (r"(?m) by @\S+ in https://github.com/.*$", ""),
+    # Remove contributor lines
+    (r"(?m)^\s*[-\*] @\S+\s*$", ""),
+    # Windows line endings
+    (r"\r", ""),
+    # Deduplicate consecutive newlines
+    (r"\n\n*", r"\n"),
+)
+
+
+OUTPUT_HTML_STRING_REPLACEMENTS = (
+    (r'<a href="(.*?)">(.*?)</a>', r"\2 (\1)"),
+    (r" \(#.*?\)", ""),
+    (r" \(.*?\.md\)", ""),
 )
 
 
@@ -67,14 +86,14 @@ def get_releases(github_org, month):
 
 def substitute_strings(releases):
     for release in releases:
-        for pattern, replacement in STRING_REPLACEMENTS:
+        for pattern, replacement in SOURCE_DATA_STRING_REPLACEMENTS:
             release["repo_name"] = re.sub(pattern, replacement, release["repo_name"])
             release["body"] = re.sub(pattern, replacement, release["body"])
 
 
 def filter_release_title(value):
     release_title = " ".join(value.split("-")).title()
-    for pattern, replacement in STRING_REPLACEMENTS:
+    for pattern, replacement in SOURCE_DATA_STRING_REPLACEMENTS:
         release_title = re.sub(pattern, replacement, release_title)
     return release_title
 
@@ -95,12 +114,17 @@ def render_releases(releases):
     jinja2_environment.filters["release_title"] = filter_release_title
     jinja2_environment.tests["startswith"] = test_startswith
     template = jinja2_environment.get_template("last_month_in_nautobot.j2")
-    print(
-        template.render(
-            releases=releases,
-            month_year=releases[0]["published_at"].strftime("%B %Y"),
-        )
+    md = template.render(
+        releases=releases,
+        month_year=releases[0]["published_at"].strftime("%B %Y"),
     )
+    html = markdown.markdown(md)
+    for pattern, replacement in OUTPUT_HTML_STRING_REPLACEMENTS:
+        html = re.sub(pattern, replacement, html)
+    with open("output.html", "w") as f:
+        f.write(html)
+    with open("output.md", "w") as f:
+        f.write(md)
 
 
 def arg_parser():
@@ -142,6 +166,9 @@ def main():
         releases = get_releases(github_org, args.month)
         with open("releases.json", "w") as f:
             json.dump(releases, f, indent=4, default=str)
+
+    with open("output.json", "w") as f:
+        json.dump(releases, f, indent=4, default=str)
 
     substitute_strings(releases)
     render_releases(releases)
