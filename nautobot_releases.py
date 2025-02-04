@@ -46,7 +46,21 @@ OUTPUT_HTML_STRING_REPLACEMENTS = (
     (r'<a href="(.*?)">(.*?)</a>', r"\2 (\1)"),
     (r" \(#.*?\)", ""),
     (r" \(.*?\.md\)", ""),
+    # Required for formatting to be properly copy/pasted to Google Docs
+    (
+        r"<code>(.*?)</code>",
+        r"<span style='color: #d63384; font-size: 10.5pt; font-family: monospace; background-color: #eff2f7;'>\1</span>",
+    ),
 )
+
+
+HTML_DOC_TEMPLATE = """
+<html>
+    <body>
+        %s
+    </body>
+</html>
+"""
 
 
 def get_releases(github_org, month):
@@ -122,7 +136,7 @@ def render_releases(releases):
     for pattern, replacement in OUTPUT_HTML_STRING_REPLACEMENTS:
         html = re.sub(pattern, replacement, html)
     with open("output.html", "w") as f:
-        f.write(html)
+        f.write(HTML_DOC_TEMPLATE % html)
     with open("output.md", "w") as f:
         f.write(md)
 
