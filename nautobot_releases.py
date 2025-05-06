@@ -22,6 +22,7 @@ SOURCE_DATA_STRING_REPLACEMENTS = (
     (r"(?i)\bssot\b", "SSoT"),
     (r"(?i)nautobot-app-SSoT", "nautobot-app-ssot"),
     (r"(?i)\bbgp\b", "BGP"),
+    (r"(?i)\bdns\b", "DNS"),    
     (r"(?i)chatops", "ChatOps"),
     (r"(?i)nautobot-app-ChatOps", "nautobot-app-chatops"),
     (r"(?i)nautobot-app-BGP-models", "nautobot-app-bgp-models"),
